@@ -44,13 +44,13 @@ class CVAE(nn.Module):
         self.conv_logvar = nn.Conv2d(512, latent_dim, 1)
         self.conv_decode = nn.Conv2d(latent_dim, 512, 1)
 
-        # Decoder: input channels doubled due to skip connection concatenation
+        # Decoder: only dec[1] receives skip from enc[3] (256ch)
         self.dec = nn.ModuleList([
-            up_block(512, 256),  # no skip at bottleneck level
-            up_block(256 + 256, 128),  # skip from enc[3]: 256ch
-            up_block(128 + 128, 64),  # skip from enc[2]: 128ch
-            up_block(64 + 64, 32),  # skip from enc[1]: 64ch
-            up_block(32 + 32, 16),  # skip from enc[0]: 32ch
+            up_block(512, 256),  # no skip
+            up_block(256 + 256, 128),  # partial skip from enc[3]: 256ch
+            up_block(128, 64),  # no skip
+            up_block(64, 32),  # no skip
+            up_block(32, 16),  # no skip
         ])
         self.out_conv = nn.Conv2d(16, 1, 1)
 
@@ -68,8 +68,8 @@ class CVAE(nn.Module):
     def decode(self, z, skips):
         x = self.conv_decode(z)
         for i, layer in enumerate(self.dec):
-            if i > 0:
-                x = torch.cat([x, skips[-(i + 1)]], dim=1)
+            if i == 1:
+                x = torch.cat([x, skips[3]], dim=1)  # skip from enc[3]
             x = layer(x)
         return torch.sigmoid(self.out_conv(x))
 
