@@ -44,36 +44,32 @@ class CVAE(nn.Module):
         self.conv_logvar = nn.Conv2d(512, latent_dim, 1)
         self.conv_decode = nn.Conv2d(latent_dim, 512, 1)
 
-        # Decoder: only dec[1] receives skip from enc[3] (256ch)
+        # Decoder
         self.dec = nn.ModuleList([
-            up_block(512, 256),  # no skip
-            up_block(256 + 256, 128),  # partial skip from enc[3]: 256ch
-            up_block(128, 64),  # no skip
-            up_block(64, 32),  # no skip
-            up_block(32, 16),  # no skip
+            up_block(512, 256),
+            up_block(256, 128),
+            up_block(128, 64),
+            up_block(64, 32),
+            up_block(32, 16),
         ])
         self.out_conv = nn.Conv2d(16, 1, 1)
 
     def encode(self, x):
-        skips = []
         for layer in self.enc:
             x = layer(x)
-            skips.append(x)
-        return self.conv_mu(x), self.conv_logvar(x), skips
+        return self.conv_mu(x), self.conv_logvar(x)
 
     def reparameterise(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
         return mu + std * torch.randn_like(std)
 
-    def decode(self, z, skips):
+    def decode(self, z):
         x = self.conv_decode(z)
-        for i, layer in enumerate(self.dec):
-            if i == 1:
-                x = torch.cat([x, skips[3]], dim=1)  # skip from enc[3]
+        for layer in self.dec:
             x = layer(x)
         return torch.sigmoid(self.out_conv(x))
 
     def forward(self, x):
-        mu, logvar, skips = self.encode(x)
+        mu, logvar = self.encode(x)
         z = self.reparameterise(mu, logvar)
-        return self.decode(z, skips), mu, logvar
+        return self.decode(z), mu, logvar

@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from pytorch_msssim import ssim
 import config
 from model import CVAE
-from dataset import get_spits
+from dataset import get_splits
 
 # def vae_loss(recon_x, x, mu, logvar):
 #     bce = nn.functional.binary_cross_entropy(
@@ -37,7 +37,7 @@ def train():
     config.setup_reproducibility()
     print(f"Using Device:  {config.DEVICE}")
 
-    train_set, val_set, _ = get_spits()
+    train_set, val_set, _ = get_splits()
     train_loader = DataLoader(train_set, batch_size=config.BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=config.BATCH_SIZE, shuffle=False)
 
@@ -51,7 +51,7 @@ def train():
         train_loss = 0
 
         # KL warm-up
-        beta = min(0.01, (epoch + 1) / 20)
+        beta = min(0.1, (epoch + 1) / 20)
 
         for x in tqdm(train_loader, desc=f"Epoch {epoch + 1} [train]", leave=False):
             x = x.to(config.DEVICE)
