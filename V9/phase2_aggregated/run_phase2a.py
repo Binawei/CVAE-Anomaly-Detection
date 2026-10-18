@@ -13,7 +13,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 
 import config
-from data_loader import prepare_training_data, prepare_validation_data, to_tensor
+from data_loader import prepare_training_data, prepare_validation_data, to_tensor, compute_error_map_bounds
 from optimization.gradient_descent import run_gradient_descent
 from optimization.grid_search import run_grid_search
 from metrics import compute_all_metrics, average_metrics, print_metrics
@@ -93,7 +93,10 @@ def main():
     # Convert to tensors
     train_data_tensors = [to_tensor(d) for d in train_data]
     val_data_tensors = [to_tensor(d) for d in val_data]
-    
+
+    # Compute bounds from actual data
+    bounds = compute_error_map_bounds(train_data_tensors)
+
     print(f"\n✓ Data loading complete")
     print(f"  Training cases: {len(train_data)}")
     print(f"  Validation cases: {len(val_data)}")
@@ -102,8 +105,8 @@ def main():
     print("\n" + "="*80)
     print("STEP 2: GRADIENT DESCENT OPTIMIZATION (Main Method)")
     print("="*80)
-
-    gd_params, gd_history = run_gradient_descent(train_data_tensors, val_data_tensors)
+    
+    gd_params, gd_history = run_gradient_descent(train_data_tensors, val_data_tensors, bounds)
 
     # Step 3: Grid Search (Comparison) — disabled for now
     # gs_params, gs_results = run_grid_search(train_data_tensors, val_data_tensors)
@@ -122,8 +125,7 @@ def main():
         pred = combine_error_maps_hard(
             data['img_error'], data['seg_uncertainty'],
             torch.tensor(gd_params['threshold_img']),
-            torch.tensor(gd_params['threshold_seg']),
-            torch.tensor(gd_params['alpha'])
+            torch.tensor(gd_params['threshold_seg'])
         )
         metrics = compute_all_metrics(pred, data['annotation'])
         gd_metrics_list.append(metrics)
@@ -166,7 +168,6 @@ def main():
     print("\nGradient Descent (Main Method):")
     print(f"  threshold_img: {gd_params['threshold_img']:.4f}")
     print(f"  threshold_seg: {gd_params['threshold_seg']:.4f}")
-    print(f"  alpha:         {gd_params['alpha']:.4f}")
     print(f"  Validation Dice: {gd_avg_metrics['dice']:.4f} +/- {gd_avg_metrics['dice_std']:.4f}")
     print("="*80 + "\n")
 

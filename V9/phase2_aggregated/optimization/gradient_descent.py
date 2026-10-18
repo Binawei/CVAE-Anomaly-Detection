@@ -18,34 +18,23 @@ from metrics import compute_all_metrics
 
 
 class GradientDescentOptimizer:
-    """
-    Optimize threshold and weighting parameters using gradient descent.
-    """
-    
-    def __init__(self, train_data, val_data):
-        """
-        Args:
-            train_data: List of training case dicts
-            val_data: List of validation case dicts
-        """
+    def __init__(self, train_data, val_data, bounds):
         self.train_data = train_data
         self.val_data = val_data
+        self.bounds = bounds
         
         # Initialize parameters
         self.params = {
-            'threshold_img': torch.tensor(config.INITIAL_PARAMS['threshold_img'], 
+            'threshold_img': torch.tensor(config.INITIAL_PARAMS['threshold_img'],
                                          requires_grad=True, device=config.DEVICE),
             'threshold_seg': torch.tensor(config.INITIAL_PARAMS['threshold_seg'],
                                          requires_grad=True, device=config.DEVICE),
-            'alpha': torch.tensor(config.INITIAL_PARAMS['alpha'],
-                                 requires_grad=True, device=config.DEVICE)
         }
-        
-        # Optimizer (Adam with learning rate scheduling)
+
+        # Optimizer
         self.optimizer = torch.optim.Adam([
             self.params['threshold_img'],
             self.params['threshold_seg'],
-            self.params['alpha']
         ], lr=config.LEARNING_RATE)
         
         # Learning rate scheduler
@@ -59,7 +48,6 @@ class GradientDescentOptimizer:
             'val_loss': [],
             'threshold_img': [],
             'threshold_seg': [],
-            'alpha': []
         }
         
         self.best_val_loss = float('inf')
@@ -67,11 +55,9 @@ class GradientDescentOptimizer:
         self.patience_counter = 0
     
     def clamp_parameters(self):
-        """Clamp parameters to valid ranges."""
         with torch.no_grad():
-            self.params['threshold_img'].clamp_(*config.PARAM_BOUNDS['threshold_img'])
-            self.params['threshold_seg'].clamp_(*config.PARAM_BOUNDS['threshold_seg'])
-            self.params['alpha'].clamp_(*config.PARAM_BOUNDS['alpha'])
+            self.params['threshold_img'].clamp_(*self.bounds['threshold_img'])
+            self.params['threshold_seg'].clamp_(*self.bounds['threshold_seg'])
     
     def compute_loss(self, data_list):
         """Compute average Dice loss across cases."""
@@ -84,7 +70,6 @@ class GradientDescentOptimizer:
                 data['seg_uncertainty'],
                 self.params['threshold_img'],
                 self.params['threshold_seg'],
-                self.params['alpha'],
                 steepness=config.STEEPNESS
             )
             
@@ -129,9 +114,8 @@ class GradientDescentOptimizer:
         print("GRADIENT DESCENT OPTIMIZATION")
         print("="*80)
         print(f"Initial parameters:")
-        print(f"  threshold_img: {self.params['threshold_img'].item():.4f}")
-        print(f"  threshold_seg: {self.params['threshold_seg'].item():.4f}")
-        print(f"  alpha: {self.params['alpha'].item():.4f}")
+        print(f"  threshold_img: {self.params['threshold_img'].item():.4f} (bounds: {self.bounds['threshold_img']})")
+        print(f"  threshold_seg: {self.params['threshold_seg'].item():.4f} (bounds: {self.bounds['threshold_seg']})")
         print(f"\nTraining for up to {config.MAX_EPOCHS} epochs...")
         print(f"Early stopping patience: {config.PATIENCE}")
         print("="*80)
@@ -151,15 +135,13 @@ class GradientDescentOptimizer:
             self.history['val_loss'].append(val_loss)
             self.history['threshold_img'].append(self.params['threshold_img'].item())
             self.history['threshold_seg'].append(self.params['threshold_seg'].item())
-            self.history['alpha'].append(self.params['alpha'].item())
             
             # Print progress
             if (epoch + 1) % 10 == 0 or epoch == 0:
                 print(f"Epoch {epoch+1:3d}/{config.MAX_EPOCHS} | "
                       f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | "
                       f"θ_img: {self.params['threshold_img'].item():.3f} | "
-                      f"θ_seg: {self.params['threshold_seg'].item():.3f} | "
-                      f"α: {self.params['alpha'].item():.3f}")
+                      f"θ_seg: {self.params['threshold_seg'].item():.3f}")
             
             # Check for improvement
             if val_loss < self.best_val_loss - config.MIN_DELTA:
@@ -167,7 +149,6 @@ class GradientDescentOptimizer:
                 self.best_params = {
                     'threshold_img': self.params['threshold_img'].item(),
                     'threshold_seg': self.params['threshold_seg'].item(),
-                    'alpha': self.params['alpha'].item()
                 }
                 self.patience_counter = 0
                 print(f"  → New best! Val loss: {val_loss:.4f}")
@@ -187,26 +168,14 @@ class GradientDescentOptimizer:
         print(f"Best parameters:")
         print(f"  threshold_img: {self.best_params['threshold_img']:.4f}")
         print(f"  threshold_seg: {self.best_params['threshold_seg']:.4f}")
-        print(f"  alpha: {self.best_params['alpha']:.4f}")
         print("="*80)
         
         return self.best_params, self.history
 
 
-def run_gradient_descent(train_data, val_data):
-    """
-    Convenience function to run gradient descent optimization.
-    
-    Args:
-        train_data: Training cases
-        val_data: Validation cases
-    
-    Returns:
-        Tuple of (best_params, history)
-    """
-    optimizer = GradientDescentOptimizer(train_data, val_data)
+def run_gradient_descent(train_data, val_data, bounds):
+    optimizer = GradientDescentOptimizer(train_data, val_data, bounds)
     best_params, history = optimizer.train()
-    
     return best_params, history
 
 

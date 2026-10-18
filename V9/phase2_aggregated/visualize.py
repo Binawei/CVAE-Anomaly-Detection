@@ -11,54 +11,33 @@ import config
 
 
 def plot_training_curves(gd_history, output_dir):
-    """
-    Plot training and validation loss curves from gradient descent.
-    
-    Args:
-        gd_history: History dict from gradient descent
-        output_dir: Where to save plots
-    """
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
     epochs = range(1, len(gd_history['train_loss']) + 1)
-    
-    # Loss curves
-    axes[0, 0].plot(epochs, gd_history['train_loss'], label='Train Loss', linewidth=2)
-    axes[0, 0].plot(epochs, gd_history['val_loss'], label='Val Loss', linewidth=2)
-    axes[0, 0].set_xlabel('Epoch')
-    axes[0, 0].set_ylabel('Dice Loss')
-    axes[0, 0].set_title('Training Progress', fontweight='bold')
-    axes[0, 0].legend()
-    axes[0, 0].grid(alpha=0.3)
-    
-    # Parameter evolution: threshold_img
-    axes[0, 1].plot(epochs, gd_history['threshold_img'], color='red', linewidth=2)
-    axes[0, 1].set_xlabel('Epoch')
-    axes[0, 1].set_ylabel('Threshold Value')
-    axes[0, 1].set_title('Image Error Threshold Evolution', fontweight='bold')
-    axes[0, 1].grid(alpha=0.3)
-    
-    # Parameter evolution: threshold_seg
-    axes[1, 0].plot(epochs, gd_history['threshold_seg'], color='green', linewidth=2)
-    axes[1, 0].set_xlabel('Epoch')
-    axes[1, 0].set_ylabel('Threshold Value')
-    axes[1, 0].set_title('Segmentation Uncertainty Threshold Evolution', fontweight='bold')
-    axes[1, 0].grid(alpha=0.3)
-    
-    # Parameter evolution: alpha
-    axes[1, 1].plot(epochs, gd_history['alpha'], color='blue', linewidth=2)
-    axes[1, 1].set_xlabel('Epoch')
-    axes[1, 1].set_ylabel('Alpha Value')
-    axes[1, 1].set_title('Weighting Parameter (α) Evolution', fontweight='bold')
-    axes[1, 1].axhline(0.5, color='gray', linestyle='--', alpha=0.5, label='Equal weight')
-    axes[1, 1].legend()
-    axes[1, 1].grid(alpha=0.3)
-    
+
+    axes[0].plot(epochs, gd_history['train_loss'], label='Train Loss', linewidth=2)
+    axes[0].plot(epochs, gd_history['val_loss'], label='Val Loss', linewidth=2)
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel('Dice Loss')
+    axes[0].set_title('Training Progress', fontweight='bold')
+    axes[0].legend()
+    axes[0].grid(alpha=0.3)
+
+    axes[1].plot(epochs, gd_history['threshold_img'], color='red', linewidth=2)
+    axes[1].set_xlabel('Epoch')
+    axes[1].set_ylabel('Threshold Value')
+    axes[1].set_title('Image Error Threshold Evolution', fontweight='bold')
+    axes[1].grid(alpha=0.3)
+
+    axes[2].plot(epochs, gd_history['threshold_seg'], color='green', linewidth=2)
+    axes[2].set_xlabel('Epoch')
+    axes[2].set_ylabel('Threshold Value')
+    axes[2].set_title('Segmentation Uncertainty Threshold Evolution', fontweight='bold')
+    axes[2].grid(alpha=0.3)
+
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'training_curves.png'), dpi=150, bbox_inches='tight')
     plt.close()
-    
-    print(f"  ✓ Saved: training_curves.png")
+    print(f"  Saved: training_curves.png")
 
 
 def visualize_prediction(data, params, method_name, output_dir):
@@ -76,8 +55,7 @@ def visualize_prediction(data, params, method_name, output_dir):
         data['img_error'],
         data['seg_uncertainty'],
         torch.tensor(params['threshold_img']),
-        torch.tensor(params['threshold_seg']),
-        torch.tensor(params['alpha'])
+        torch.tensor(params['threshold_seg'])
     )
     
     # Convert to numpy
@@ -134,12 +112,10 @@ def visualize_prediction(data, params, method_name, output_dir):
     axes[1, 2].set_title('Overlay\n🟢 GT 🔴 Pred 🟡 Overlap', fontweight='bold')
     axes[1, 2].axis('off')
     
-    # Add parameters as text
     param_text = f"Parameters:\n"
-    param_text += f"  θ_img = {params['threshold_img']:.3f}\n"
-    param_text += f"  θ_seg = {params['threshold_seg']:.3f}\n"
-    param_text += f"  α = {params['alpha']:.3f}"
-    fig.text(0.98, 0.02, param_text, ha='right', va='bottom', 
+    param_text += f"  theta_img = {params['threshold_img']:.3f}\n"
+    param_text += f"  theta_seg = {params['threshold_seg']:.3f}"
+    fig.text(0.98, 0.02, param_text, ha='right', va='bottom',
              fontsize=10, family='monospace',
              bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
     

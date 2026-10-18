@@ -392,7 +392,7 @@ for slice_idx in range(data.shape[2]):  # Loop through all slices
 #### Step 7: Apply transformations
 ```python
     slice_data = np.rot90(slice_data, k=1)  # Rotate 90° CCW
-    slice_data = np.fliplr(slice_data)      # Flip left-right
+    # slice_data = np.fliplr(slice_data)      # Flip left-right
 ```
 
 **Why?**

@@ -68,24 +68,17 @@ SEGMENTATION_FILES = {
 
 # Initial parameter values
 INITIAL_PARAMS = {
-    'threshold_img': 0.10,     # Image reconstruction error threshold
-    'threshold_seg': 0.25,     # Segmentation uncertainty threshold (aggregated)
-    'alpha': 0.5               # Combination weight: α×img + (1-α)×seg
-}
-
-# Parameter bounds (valid ranges)
-PARAM_BOUNDS = {
-    'threshold_img': (0.05, 0.50),
-    'threshold_seg': (0.05, 0.50),
-    'alpha': (0.0, 1.0) #Remove alpha and combine with logical AND.
+    'threshold_img': 0.10,
+    'threshold_seg': 0.25,
 }
 
 # Optimization hyperparameters
 LEARNING_RATE = 0.01
 MAX_EPOCHS = 500
-PATIENCE = 100
+PATIENCE = 50
 MIN_DELTA = 1e-5
 
+# Soft thresholding steepness
 STEEPNESS = 50
 
 # Device
@@ -141,16 +134,7 @@ def get_annotation_path(case_name):
     return os.path.normpath(path)  # Normalize path separators for Windows
 
 def get_error_map_path(case_name, error_type, slice_num=0):
-    """
-    Get path to error map file.
-    
-    Args:
-        case_name: Volume name (e.g., "APU_FL3300 D6stim ADENO 22.3.21")
-        error_type: 'image_errors' or 'seg_errors_aggregated'
-        slice_num: Slice number (0, 1, 2, 3)
-    """
     filename = f"{case_name}_s{slice_num}.npy"
-    # All our labeled cases are abnormal
     path = os.path.join(ERROR_MAPS_DIR, 'abnormal', error_type, filename)
     return path
 

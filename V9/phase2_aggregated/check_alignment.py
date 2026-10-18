@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import config
 
 # ── Pick case and slice to check ──────────────────────────────────────────────
-CASE_NAME = "CC21460186Day of ETSDMODA2"
+CASE_NAME = "CM 41060268 SDFTET"
 SLICE_NUM = 0
 
 # ── Load original PNG image ───────────────────────────────────────────────────
